@@ -13,6 +13,7 @@ methods = ['DynProg', 'ValIter']
 
 # Some colours
 LIGHT_RED    = '#FFC4CC'
+LIGHTER_RED  = '#FFC4CC'
 LIGHT_GREEN  = '#95FD99'
 BLACK        = '#000000'
 WHITE        = '#FFFFFF'
@@ -39,7 +40,7 @@ class Maze:
     STEP_REWARD = -1 # TODO
     GOAL_REWARD = 1 # TODO
     IMPOSSIBLE_REWARD = -100 # TODO
-    MINOTAUR_REWARD = -5 # TODO
+    MINOTAUR_REWARD = -100 # TODO
 
     def __init__(self, maze):
         """
@@ -321,7 +322,7 @@ def value_iteration(env, gamma, epsilon):
 
     return V, policy
 
-def animate_solution(maze, path):
+def animate_solution(maze, path, V=None, map=None, save_dir=None, sleep_time=None):
 
     # Map a color to each cell in the maze
     col_map = {0: WHITE, 1: BLACK, 2: LIGHT_GREEN, -1: LIGHT_RED, -2: LIGHT_PURPLE}
@@ -353,17 +354,67 @@ def animate_solution(maze, path):
         cell.set_height(1.0/rows)
         cell.set_width(1.0/cols)
 
+    prev_states = np.full(maze.shape, -1)
+    current_text = None
+    difference_text = None
     for i in range(0, len(path)):
+        # update title for step
         ax.set_title(f'Policy simulation (step {i+1} / {len(path)})')
+        # account for winning or losing
+        # assign colours for player and minotaur, resetting previous steps colours
         if path[i-1] != 'Eaten' and path[i-1] != 'Win':
             grid.get_celld()[(path[i-1][0])].set_facecolor(col_map[maze[path[i-1][0]]])
             grid.get_celld()[(path[i-1][1])].set_facecolor(col_map[maze[path[i-1][1]]])
         if path[i] != 'Eaten' and path[i] != 'Win':
             grid.get_celld()[(path[i][0])].set_facecolor(col_map[-2]) # Position of the player
             grid.get_celld()[(path[i][1])].set_facecolor(col_map[-1]) # Position of the minotaur
-        display.display(fig)
-        time.sleep(0.1)
-        display.clear_output(wait = True)
+            
+            # display values for this minotaur position
+            if not (V is None) and not (map is None):
+                # clear any previously made text
+                for text in ax.texts:
+                    text.remove()
+                # loop through all positions and display values for that state
+                for k in range(maze.shape[0]):
+                    for l in range(maze.shape[1]):
+                        # skip if this is invalid (out-of-bounds, win, eaten)
+                        if maze[k][l] == 1 or maze[k][l] == 2 or (k, l) == (path[i][1]):
+                            continue
+                        # get the state and initialize previous state if needed
+                        state = map[((k, l), (path[i][1]))]
+                        if prev_states[k][l] == -1: prev_states[k][l] = state
+                        # get difference in values between previous state and this one, then update previous state
+                        value_difference = V[state] - V[prev_states[k][l]]
+                        prev_states[k][l] = state
+                        
+                        # display text, top is the value of that cell state (if player was in that cell instead)
+                        # bottom text is the difference in this compared to previous state (when minotaur position was different)
+                        current_text = ax.text(
+                            1.0 * (0.5 / cols) + (l / cols), 
+                            1.0 * (0.5 / rows) + ((rows - k - 1.0) / rows), 
+                            f"{'+' if V[state] >= 0.0 else ''}{V[state]:0.3f}", 
+                            color="black", 
+                            ha="center", 
+                            va="center", 
+                            fontsize=12
+                        )
+                        difference_text = ax.text(
+                            1.0 * (0.5 / cols) + (l / cols), 
+                            0.5 * (0.5 / rows) + ((rows - k - 1.0) / rows), 
+                            f"{'+' if value_difference >= 0.0 else ''}{value_difference:0.3f}", 
+                            color="red" if value_difference < 0.0 else "green", 
+                            ha="center", 
+                            va="center", 
+                            fontsize=10
+                        )
+        # saving
+        if not (save_dir is None):
+           fig.savefig(f'{save_dir}{i+1:02}.png', bbox_inches='tight')
+        # display (need to run in notebook)
+        if not (sleep_time is None):
+            display.display(fig)
+            time.sleep(sleep_time)
+            display.clear_output(wait = True)
 
 if __name__ == "__main__":
     # Description of the maze as a numpy array
