@@ -39,7 +39,7 @@ class Maze:
     STEP_REWARD = -1 # TODO
     GOAL_REWARD = 1 # TODO
     IMPOSSIBLE_REWARD = -100 # TODO
-    MINOTAUR_REWARD = 0 # TODO
+    MINOTAUR_REWARD = -5 # TODO
 
     def __init__(self, maze):
         """
@@ -170,12 +170,16 @@ class Maze:
         transition_probabilities = np.zeros(dimensions)
 
         # TODO: Compute the transition probabilities.
+
+        # transition probabilities depend on number of possible \
+        # states that we can move to
         for s in range(self.n_states):
             for a in range(self.n_actions):
-                prob_states = self.__move(s,a)
-                prob_next_s = 1 / len(prob_states)
-                for next_s in prob_states:
-                    transition_probabilities[self.map[next_s], s, a] = prob_next_s
+                possible_states = self.__move(s, a)
+                probabilities = 1 / len(possible_states)
+                for state in possible_states:
+                    # must map to get index
+                    transition_probabilities[self.map[state], s, a] = probabilities
   
         return transition_probabilities
 
@@ -270,8 +274,31 @@ def dynamic_programming(env, horizon):
     
     # TODO:
 
-    V = np.random.rand(env.n_states, horizon)
-    policy = np.random.randint(5, size=(env.n_states, horizon))
+    # V = np.random.rand(env.n_states, horizon)
+    # policy = np.random.randint(5, size=(env.n_states, horizon))
+
+    # get MDP dynamics
+    n_states = env.n_states
+    n_actions = env.n_actions
+    p = env.transition_probabilities
+    T = horizon
+    r = env.rewards
+    
+    # initialize
+    V = np.zeros((n_states, T))
+    policy = np.zeros((n_states, T))
+    Q = np.zeros((n_states, n_actions))
+
+    # backwards recursion following Bellmans equation
+    # note that we are 0-indexing thats why the time bounds are off by 1
+    for t in range(T-2, -1, -1):
+        # update q-values for every state and action
+        for s in range(n_states):
+            for a in range(n_actions):
+                Q[s, a] = r[s, a] + np.dot(p[:, s, a], V[:, t+1])  # np.dot computes the summation over the multiplications
+        # now update based off this
+        V[:, t] = np.max(Q, axis=1)
+        policy[:, t] = np.argmax(Q, axis=1)
 
     return V, policy
 
@@ -327,6 +354,7 @@ def animate_solution(maze, path):
         cell.set_width(1.0/cols)
 
     for i in range(0, len(path)):
+        ax.set_title(f'Policy simulation (step {i+1} / {len(path)})')
         if path[i-1] != 'Eaten' and path[i-1] != 'Win':
             grid.get_celld()[(path[i-1][0])].set_facecolor(col_map[maze[path[i-1][0]]])
             grid.get_celld()[(path[i-1][1])].set_facecolor(col_map[maze[path[i-1][1]]])
