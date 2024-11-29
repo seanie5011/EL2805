@@ -42,10 +42,12 @@ class Maze:
     IMPOSSIBLE_REWARD = -100 # TODO
     MINOTAUR_REWARD = -100 # TODO
 
-    def __init__(self, maze):
+    def __init__(self, maze, can_minotaur_stay=False):
         """
         Constructor of the environment Maze.
         """
+        self.can_minotaur_stay = can_minotaur_stay
+        
         self.maze                     = maze
         self.actions                  = self.__actions()
         self.states, self.map         = self.__states()
@@ -109,8 +111,10 @@ class Maze:
         else:
             row_player = self.states[state][0][0] + self.actions[action][0] # Row of the player's next position 
             col_player = self.states[state][0][1] + self.actions[action][1] # Column of the player's next position 
-            
+
             actions_minotaur = [[0, -1], [0, 1], [-1, 0], [1, 0]] # Possible moves for the Minotaur
+            if self.can_minotaur_stay:
+                actions_minotaur.append([0, 0])
             rows_minotaur, cols_minotaur = [], []
             for i in range(len(actions_minotaur)):
                 # Is the minotaur getting out of the limits of the maze?
