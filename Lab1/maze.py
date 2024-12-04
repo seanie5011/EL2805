@@ -8,6 +8,8 @@ import time
 from IPython import display
 import random
 
+from tqdm import tqdm
+
 # Implemented methods
 methods = ['DynProg', 'ValIter']
 
@@ -40,7 +42,7 @@ class Maze:
     STEP_REWARD = -1 # TODO
     GOAL_REWARD = 1 # TODO
     IMPOSSIBLE_REWARD = -100 # TODO
-    MINOTAUR_REWARD = -100 # TODO
+    MINOTAUR_REWARD = -10 # TODO
 
     def __init__(self, maze, can_minotaur_stay=False):
         """
@@ -216,7 +218,7 @@ class Maze:
 
         return rewards
 
-    def simulate(self, start, policy, method):
+    def simulate(self, start, policy, method, horizon=100, poison_prob=1/30):
         if method not in methods:
             error = 'ERROR: the argument method must be in {}'.format(methods)
             raise NameError(error)
@@ -224,6 +226,7 @@ class Maze:
         path = list()
         
         if method == 'DynProg':
+            # horizon is overwritten in the case of DynProg
             horizon = policy.shape[1] # Deduce the horizon from the policy shape
             t = 0 # Initialize current time
             s = self.map[start] # Initialize current state 
@@ -237,24 +240,28 @@ class Maze:
                 t +=1 # Update time and state for next iteration
                 s = self.map[next_s]
                 
-        if method == 'ValIter': 
-            t = 1 # Initialize current state, next state and time
+        if method == 'ValIter':
             s = self.map[start]
-            path.append(start) # Add the starting position in the maze to the path
-            next_states = self.__move(s, policy[s]) # Move to next state given the policy and the current state
-            next_s = random.choice(next_states)  # TODO: 
-            path.append(next_s) # Add the next state to the path
-            
-            horizon = 1 # TODO: Question e
-            # Loop while state is not the goal state
-            while s != next_s and t <= horizon:
-                s = self.map[next_s] # Update state
-                next_states = self.__move(s, policy[s]) # Move to next state given the policy and the current state
-                next_s = random.choice(next_states) # TODO: 
-                path.append(next_s) # Add the next state to the path
-                t += 1 # Update time for next iteration
-        
-        return [path, horizon] # Return the horizon as well, to plot the histograms for the VI
+            while True:
+                a = policy[s]  # Get action from policy
+                next_states = self.__move(s, a)
+                next_s = random.choice(next_states)
+                path.append(next_s)
+                
+                # Check if we've reached a terminal state
+                if next_s == 'Win' or next_s == 'Eaten':
+                    break
+                    
+                # Update state
+                s = self.map[next_s]
+                
+                # Simulate geometric distribution for lifetime
+                if random.random() < poison_prob:  # Die with probability poison_prob
+                    path.append('Eaten')  # Use 'Eaten' as a placeholder (instead of implementing a 'Dead' state)
+                    break
+
+        return [path, horizon]  # Return the horizon as well, to plot the histograms for the VI
+
 
     def show(self):
         print('The states are :')
@@ -307,23 +314,45 @@ def dynamic_programming(env, horizon):
 
     return V, policy
 
-def value_iteration(env, gamma, epsilon):
+def value_iteration(env, gamma, epsilon, max_iter=1000):
     """ Solves the shortest path problem using value iteration
         :input Maze env           : The maze environment in which we seek to
                                     find the shortest path.
         :input float gamma        : The discount factor.
         :input float epsilon      : accuracy of the value iteration procedure.
-        :return numpy.array V     : Optimal values for every state at every
-                                    time, dimension S*T
-        :return numpy.array policy: Optimal time-varying policy at every state,
-                                    dimension S*T
+        :input int max_iter      : maximum number of iterations
+        :return numpy.array V     : Optimal value function
+        :return numpy.array policy: Optimal policy
     """
     
-    # TODO: 
-
-    V = np.random.rand(env.n_states, horizon)
-    policy = np.random.randint(5, size=(env.n_states, horizon))
-
+    # Get MDP dynamics
+    n_states = env.n_states
+    n_actions = env.n_actions
+    p = env.transition_probabilities
+    r = env.rewards
+    
+    # Initialize value function and policy
+    V = np.zeros(n_states)
+    policy = np.zeros(n_states, dtype=int)
+    Q = np.zeros((n_states, n_actions))
+    
+    # Value iteration
+    for _ in tqdm(range(max_iter), desc='Value iteration (may converge early)'):
+        V_old = V.copy()
+        
+        # Update Q-values for all state-action pairs
+        for s in range(n_states):
+            for a in range(n_actions):
+                Q[s, a] = r[s, a] + gamma * np.dot(p[:, s, a], V_old)
+        
+        # Update value function and policy
+        V = np.max(Q, axis=1)
+        policy = np.argmax(Q, axis=1)
+        
+        # Check convergence
+        if np.max(np.abs(V - V_old)) < epsilon:
+            break
+    
     return V, policy
 
 def animate_solution(maze, path, V=None, map=None, save_dir=None, sleep_time=None):
