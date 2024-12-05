@@ -390,3 +390,311 @@ epsilon_min: 0.05
 epsilon_episodes: 500
 clip_max_norm: 0.5
 final average reward: 72
+----------
+model_000029.pth
+Architecture: {input_size, 32, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 32
+buffer_size: 20000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 500
+clip_max_norm: 0.5
+final average reward: -99
+----------
+model_000030.pth
+Architecture: {input_size, 32, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 32
+buffer_size: 20000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 500
+clip_max_norm: 1.0
+final average reward: -102
+----------
+model_000031.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 32
+buffer_size: 20000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 500
+clip_max_norm: 0.5
+final average reward: -70
+----------
+model_000032.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 300
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 32
+buffer_size: 20000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 500
+clip_max_norm: 0.5
+final average reward: -72
+----------
+model_000033.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 32
+buffer_size: 20000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -31
+----------
+model_000034.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 20000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -5
+----------
+model_000035.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -48
+----------
+model_000036.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.002
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -54
+----------
+model_000037.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 250
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.002
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -93
+----------
+model_000038.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 250
+discount_factor: 0.95
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -64
+----------
+model_000039.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.99
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -103
+----------
+model_000040.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.92
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -114
+----------
+model_000041.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 250
+discount_factor: 0.9
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -62
+----------
+model_000042.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 300
+discount_factor: 0.9
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -32
+----------
+model_000043.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 350
+discount_factor: 0.9
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -66
+----------
+model_000044.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 500
+discount_factor: 0.9
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -52
+----------
+model_000045.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 500
+discount_factor: 0.85
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 400
+clip_max_norm: 0.5
+final average reward: -60
+----------
+model_000046.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.85
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 0.5
+final average reward: -77
+----------
+model_000047.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.9
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 1.5
+final average reward: -41
+----------
+model_000048.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 220
+discount_factor: 0.9
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 25000
+learning_rate: 0.0012
+epsilon_max: 0.95
+epsilon_min: 0.05
+epsilon_episodes: 200
+clip_max_norm: 1.5
+final average reward: -65
+----------
+model_000049.pth
+Architecture: {input_size, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.92
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 30000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.1
+epsilon_episodes: 200
+clip_max_norm: 1.5
+final average reward: -79
+----------
+model_000050.pth
+Architecture: {input_size, 64, 64, output_size} with ReLU activation on input and hidden layer
+N_episodes: 200
+discount_factor: 0.92
+n_ep_running_average: 50
+batch_size: 64
+buffer_size: 30000
+learning_rate: 0.001
+epsilon_max: 0.95
+epsilon_min: 0.1
+epsilon_episodes: 200
+clip_max_norm: 1.5
+final average reward: -73

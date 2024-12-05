@@ -60,7 +60,7 @@ def select_action(state, epsilon):
         return env.action_space.sample()  # Explore by selecting a random action
     else:
         state_tensor = torch.tensor([state], dtype=torch.float32)  # Convert state to tensor
-        return network(state_tensor).argmax().item()  # Exploit by selecting the action with max Q-value
+        return policy_net(state_tensor).argmax().item()  # Exploit by selecting the action with max Q-value
 
 def running_average(x, N):
     ''' Function used to compute the running average
@@ -99,6 +99,8 @@ buffer_size = 20000
 learning_rate = 0.001
 clip_max_norm = 0.5
 
+C = (buffer_size / batch_size)
+
 # We will use these variables to compute the average episodic reward and
 # the average number of steps per episode
 episode_reward_list = []       # this list contains the total reward per episode
@@ -107,16 +109,18 @@ episode_number_of_steps = []   # this list contains the number of steps per epis
 # Initialize experience replay buffer
 buffer = ExperienceReplayBuffer(maximum_length=buffer_size)
 # Initialize the Q-network (state -> Q-values for actions)
-network = DQNAgent(n_actions=n_actions, input_size=env.observation_space.shape[0], output_size=env.action_space.n)
+policy_net = DQNAgent(n_actions=n_actions, input_size=env.observation_space.shape[0], output_size=env.action_space.n)
+target_net = DQNAgent(n_actions=n_actions, input_size=env.observation_space.shape[0], output_size=env.action_space.n)
+target_net.load_state_dict(policy_net.state_dict())
 # Optimizer for training the Q-network
-optimizer = optim.Adam(network.parameters(), lr=learning_rate)  # Adam optimizer for efficient training
+optimizer = optim.Adam(policy_net.parameters(), lr=learning_rate)  # Adam optimizer for efficient training
 
 ### Training process
 
 # trange is an alternative to range in python, from the tqdm library
 # It shows a nice progression bar that you can update with useful information
 EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
-
+update_steps = 0  # will increase every step, reset every time it reaches C
 for i in EPISODES:
     # Reset enviroment data and initialize variables
     done, truncated = False, False
@@ -140,7 +144,7 @@ for i in EPISODES:
         t += 1
 
         # Training step: update Q-values using a batch of experiences from the buffer
-        if len(buffer) >= (buffer_size / batch_size):
+        if len(buffer) >= batch_size:
             # Sample a batch of experiences from the buffer
             states, actions, rewards, next_states, dones = buffer.sample_batch(batch_size)
 
@@ -152,11 +156,11 @@ for i in EPISODES:
             dones = torch.tensor(dones, dtype=torch.float32)
 
             # Compute Q-values for the current states
-            q_values = network(states).gather(1, actions).squeeze()  # Q-values for taken actions
+            q_values = policy_net(states).gather(1, actions).squeeze()  # Q-values for taken actions
 
             # Compute the target Q-values for the next states
             with torch.no_grad():  # No need to compute gradients for target Q-values
-                next_q_values = network(next_states).max(1)[0]  # Max Q-value for next state
+                next_q_values = target_net(next_states).max(1)[0]  # Max Q-value for next state
                 targets = rewards + discount_factor * next_q_values * (1 - dones)  # Target: Bellman equation
 
             # Compute the loss (MSE loss between predicted Q-values and target Q-values)
@@ -165,8 +169,13 @@ for i in EPISODES:
             # Backpropagation step: update network parameters
             optimizer.zero_grad()  # Zero gradients before backpropagation
             loss.backward()  # Compute gradients
-            nn.utils.clip_grad_norm_(network.parameters(), max_norm=clip_max_norm)  # Clip gradients to avoid exploding gradients
+            nn.utils.clip_grad_norm_(policy_net.parameters(), max_norm=clip_max_norm)  # Clip gradients to avoid exploding gradients
             optimizer.step()  # Update parameters
+
+            # update the target network if number of steps that have passed since last update >= C
+            if update_steps >= C:
+                update_steps = 0
+                target_net.load_state_dict(policy_net.state_dict())
 
     # Decay epsilon: reduce exploration over time
     epsilon = max(epsilon_min, epsilon_max * (epsilon_min / epsilon_max)**((i) / (0.9 * epsilon_episodes - 1)))
@@ -199,7 +208,7 @@ while filepath in filepaths:
     i += 1
 filename = filepath.split('\\')[-1]
 # save the model and config details
-torch.save(network, filepath)
+torch.save(policy_net, filepath)
 with open(config_path, "a") as file:
     file.writelines(elem + '\n' for elem in [
         '----------',
