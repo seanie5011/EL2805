@@ -17,13 +17,6 @@ from DQN_agent import RandomAgent, DQNAgent
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# seed = 42
-# np.random.seed(seed)
-# random.seed(seed)
-# torch.manual_seed(seed)
-# env.seed(seed)
-# env.action_space.seed(seed)
-
 # Define Experience tuple
 # Experience represents a transition in the environment, including the current state, action taken,
 # received reward, next state, and whether the episode is done.
@@ -91,7 +84,7 @@ env = gym.make('LunarLander-v3')
 env.reset()
 
 # Parameters
-N_episodes = 200  # Number of episodes
+N_episodes = 220  # Number of episodes
 discount_factor = 0.99  # Value of the discount factor
 n_ep_running_average = 50  # Running average of 50 episodes
 n_actions = env.action_space.n  # Number of available actions
@@ -206,7 +199,7 @@ while filepath in filepaths:
     i += 1
 filename = filepath.split('\\')[-1]
 # save the model and config details
-torch.save(network.state_dict(), filepath)
+torch.save(network, filepath)
 with open(config_path, "a") as file:
     file.writelines(elem + '\n' for elem in [
         '----------',

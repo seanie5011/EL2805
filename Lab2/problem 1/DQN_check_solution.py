@@ -26,18 +26,16 @@ def running_average(x, N):
 
 # Load model
 try:
-    model = DQNAgent(4, 8, 4)
-    model.load_state_dict(torch.load('models\\model_000012.pth'))
-    model.eval()
+    model= torch.load('neural-network-1.pth')
     print('Network model: {}'.format(model))
 except:
     print('File neural-network-1.pth not found!')
     exit(-1)
 
 # Import and initialize Mountain Car Environment
-# env = gym.make('LunarLander-v3')
+env = gym.make('LunarLander-v3')
 # If you want to render the environment while training run instead:
-env = gym.make('LunarLander-v3', render_mode = "human")
+# env = gym.make('LunarLander-v3', render_mode = "human")
 
 env.reset()
 
