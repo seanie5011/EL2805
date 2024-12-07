@@ -40,8 +40,8 @@ class Maze:
 
     # Reward values 
     STEP_REWARD = -1 # TODO
-    GOAL_REWARD = 1 # TODO
-    IMPOSSIBLE_REWARD = -100 # TODO
+    GOAL_REWARD = 10 # TODO
+    IMPOSSIBLE_REWARD = -10 # TODO
     MINOTAUR_REWARD = -10 # TODO
 
     def __init__(self, maze, can_minotaur_stay=False):
@@ -442,7 +442,7 @@ def animate_solution(maze, path, V=None, map=None, save_dir=None, sleep_time=Non
                         )
         # saving
         if not (save_dir is None):
-           fig.savefig(f'{save_dir}{i+1:02}.png', bbox_inches='tight')
+           fig.savefig(f'figs/{save_dir}{i+1:02}.png', bbox_inches='tight')
         # display (need to run in notebook)
         if not (sleep_time is None):
             display.display(fig)

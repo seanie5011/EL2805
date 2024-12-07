@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # Gamma models survival probability per step, ensures future rewards are discounted appropriately for a finite lifetime 
     gamma = 1 - 1/mean_lifetime  
 
-    epsilon = 1e-3  # Convergence threshold
+    epsilon = 1e-5  # Convergence threshold
     max_iter = 5000
 
     V, policy = value_iteration(env, gamma, epsilon, max_iter)
@@ -43,3 +43,5 @@ if __name__ == "__main__":
 
     success_probability = wins / n_simulations
     print(f"\nSuccess probability over {n_simulations} simulations: {success_probability:.3f}")
+
+    animate_solution(maze, path, V, map=env.map, save_dir="ef")
