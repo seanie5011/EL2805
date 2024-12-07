@@ -2,6 +2,7 @@
 Lab1/outputs/*
 Lab2/problem 1/outputs/*
 Lab2/problem 1/models/*.pth
+Lab1/figs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

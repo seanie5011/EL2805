@@ -1,13 +1,14 @@
 # Bjarni Haukur Bjarnason (bhbj@kth.se)
 # Seán O Riordan (seanor@kth.se)
 
+import random
+from enum import IntEnum, auto
+from typing import Tuple, List
+
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Tuple, Dict, List
-import random
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle
-from enum import IntEnum, auto
 
 class State(IntEnum):
     EMPTY = 0

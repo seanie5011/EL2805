@@ -3,6 +3,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 from maze import Maze, value_iteration, animate_solution
 
 
