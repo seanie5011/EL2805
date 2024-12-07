@@ -1,3 +1,6 @@
+# Bjarni Haukur Bjarnason (bhbj@kth.se)
+# Seán O Riordan (seanor@kth.se)
+
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List
