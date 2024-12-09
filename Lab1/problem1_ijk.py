@@ -387,9 +387,8 @@ if __name__ == "__main__":
     
     plt.xlabel('Episode')
     plt.ylabel('Total Reward')
-    plt.title(
-        'Q-Learning Training Progress: Total Reward per Episode' + \
-        f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else ''
+    plt.title(f'Q-Learning Training Progress: Total Reward per Episode (ε={args.epsilon})' + \
+        (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
     )
     plt.legend()
     plt.grid(True, alpha=0.3)
@@ -403,8 +402,9 @@ if __name__ == "__main__":
     
     plt.xlabel('Episode')
     plt.ylabel('Initial State Value')
-    plt.title('Q-Learning Convergence' + \
-              f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    plt.title(f'Q-Learning Convergence (ε={args.epsilon})' + \
+            (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    )
     plt.legend()
     plt.grid(True)
     plt.savefig('figs/q_learning_convergence.png')
@@ -433,8 +433,9 @@ if __name__ == "__main__":
     
     plt.xlabel('Episode')
     plt.ylabel('Total Reward')
-    plt.title('SARSA Training Progress: Total Reward per Episode' + \
-              f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    plt.title(f'SARSA Training Progress: Total Reward per Episode (ε={args.epsilon})' + \
+        (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    )
     
     plt.legend()
     plt.grid(True, alpha=0.3)
@@ -448,8 +449,9 @@ if __name__ == "__main__":
     
     plt.xlabel('Episode')
     plt.ylabel('Initial State Value')
-    plt.title('SARSA Convergence' + \
-              f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    plt.title(f'SARSA Convergence (ε={args.epsilon})' + \
+        (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    )
     plt.legend()
     plt.grid(True)
     plt.savefig('figs/sarsa_convergence.png')
@@ -468,14 +470,18 @@ if __name__ == "__main__":
     total_outcomes = sum(q_outcomes1.values())
     outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in q_outcomes1.items()}
     plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
-    plt.title(f'Q-Learning Outcomes (ε={args.epsilon})')
+    plt.title(f'Q-Learning Outcomes (ε={args.epsilon})' + \
+        (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    )
     plt.ylabel('Percentage of Episodes (%)')
     
     plt.subplot(1, 2, 2)
     total_outcomes = sum(q_outcomes2.values())
     outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in q_outcomes2.items()}
     plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
-    plt.title(f'Q-Learning Outcomes (ε={args.epsilon2})')
+    plt.title(f'Q-Learning Outcomes (ε={args.epsilon2})' + \
+        (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    )
     plt.ylabel('Percentage of Episodes (%)')
     plt.tight_layout()
     plt.savefig('figs/q_learning_outcomes.png')
@@ -487,15 +493,62 @@ if __name__ == "__main__":
     total_outcomes = sum(sarsa_outcomes1.values())
     outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in sarsa_outcomes1.items()}
     plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
-    plt.title(f'SARSA Outcomes (ε={args.epsilon})')
+    plt.title(f'SARSA Outcomes (ε={args.epsilon})' + \
+        (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    )
     plt.ylabel('Percentage of Episodes (%)')
     
     plt.subplot(1, 2, 2)
     total_outcomes = sum(sarsa_outcomes2.values())
     outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in sarsa_outcomes2.items()}
     plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
-    plt.title(f'SARSA Outcomes (ε={args.epsilon2})')
+    plt.title(f'SARSA Outcomes (ε={args.epsilon2})' + \
+        (f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    )
     plt.ylabel('Percentage of Episodes (%)')
     plt.tight_layout()
     plt.savefig('figs/sarsa_outcomes.png')
     plt.close()
+    
+    # Visualize Q-learning path
+    print("\nSimulating one episode with trained Q-learning agent...")
+    state = ((0, 0), (6, 5), False)
+    q_path = []
+    total_reward = 0
+    
+    while True:
+        q_path.append(state)
+        action = q_agent1.get_action(state, training=False)
+        next_state, reward, done = env.step(state, action)
+        total_reward += reward
+        
+        if done:
+            q_path.append(next_state if next_state is not None else 'Terminal')
+            break
+            
+        state = next_state
+    
+    print(f"Q-learning episode finished with total reward: {total_reward}")
+    visualize_path(env.maze, q_path, 'q_learning_path.png')
+    
+    # Visualize SARSA path
+    print("\nSimulating one episode with trained SARSA agent...")
+    state = ((0, 0), (6, 5), False)
+    sarsa_path = []
+    total_reward = 0
+    
+    while True:
+        sarsa_path.append(state)
+        action = sarsa_agent1.get_action(state, training=False)
+        next_state, reward, done = env.step(state, action)
+        total_reward += reward
+        
+        if done:
+            sarsa_path.append(next_state if next_state is not None else 'Terminal')
+            break
+            
+        state = next_state
+    
+    print(f"SARSA episode finished with total reward: {total_reward}")
+    visualize_path(env.maze, sarsa_path, 'sarsa_path.png')
+

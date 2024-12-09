@@ -1,6 +1,9 @@
 jupyterlab
 matplotlib
+tqdm
 numpy
 pandas
 requests
 scipy
+
+gymnasium
