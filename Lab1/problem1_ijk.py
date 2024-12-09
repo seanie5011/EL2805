@@ -4,6 +4,7 @@
 import random
 from enum import IntEnum, auto
 from typing import Tuple, List
+import argparse
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,7 +21,7 @@ class Reward(IntEnum):
     WIN = 1000
     KEY = 100
     EATEN = -100
-    POISONED = -10  # New negative reward for being poisoned
+    POISONED = 0  # penalizing steps is already minimizing the number of steps, and therefore the likelihood of being poisoned
     STEP = -1
 
 class ModifiedMaze:
@@ -31,7 +32,8 @@ class ModifiedMaze:
     MOVE_UP = 3
     MOVE_DOWN = 4
     
-    def __init__(self):
+    def __init__(self, poison_prob=1/50):
+        self.poison_prob = poison_prob
         # Convert maze to numeric format for easier handling
         self.maze = np.array([
             [0, 0, 1, 0, 0, 0, 0, 2],  # 2 represents key position (C)
@@ -90,7 +92,7 @@ class ModifiedMaze:
         # Random movement among valid moves
         return random.choice([pos for _, pos in valid_moves])
     
-    def step(self, state, action, poison_prob=1/30):
+    def step(self, state, action):
         """Take a step in the environment."""
         player_pos, minotaur_pos, has_key = state
         
@@ -126,7 +128,7 @@ class ModifiedMaze:
             return (new_player_pos, new_minotaur_pos, new_has_key), Reward.KEY, False
             
         # Check for poison
-        if random.random() < poison_prob:
+        if random.random() < self.poison_prob:
             return None, Reward.POISONED, True
             
         step_penalty = Reward.STEP
@@ -134,9 +136,13 @@ class ModifiedMaze:
         return (new_player_pos, new_minotaur_pos, new_has_key), step_penalty, False
 
 class QLearningAgent:
-    def __init__(self, env: ModifiedMaze, epsilon: float, alpha_power: float = 0.8):
+    def __init__(self, env: ModifiedMaze, epsilon: float, alpha_power: float = 0.8, 
+                 epsilon_decay: float = 1.0, epsilon_min: float = 0.01):
         self.env = env
+        self.initial_epsilon = epsilon
         self.epsilon = epsilon
+        self.epsilon_decay = epsilon_decay
+        self.epsilon_min = epsilon_min
         self.alpha_power = alpha_power
         self.Q = {}
         self.visit_counts = {}
@@ -151,6 +157,9 @@ class QLearningAgent:
         if training and random.random() < self.epsilon:
             return random.randint(0, 4)
         return np.argmax(self.Q[state_key])
+    
+    def decay_epsilon(self):
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
     
     def update(self, state, action: int, next_state, reward: float, gamma: float):
         state_key = str(state)
@@ -195,9 +204,11 @@ class SarsaAgent(QLearningAgent):
             
         self.Q[state_key][action] += alpha * (target - self.Q[state_key][action])
 
-def train_agent(agent, n_episodes: int, gamma: float = 0.98, max_steps: int = 100) -> List[float]:
+def train_agent(agent, n_episodes: int, gamma: float = 0.98, max_steps: int = 100) -> Tuple[List[float], List[float]]:
     initial_values = []
     running_rewards = []  # Track running average of rewards
+    episode_rewards = []  # Track individual episode rewards
+    episode_steps = []   # Track steps per episode
     
     for episode in range(n_episodes):
         state = ((0, 0), (6, 5), False)
@@ -220,20 +231,28 @@ def train_agent(agent, n_episodes: int, gamma: float = 0.98, max_steps: int = 10
             total_reward += reward
             if done or state is None:
                 break
-                
+            
+        episode_steps.append(step)
         initial_state_key = str(((0, 0), (6, 5), False))
         initial_values.append(np.max(agent.Q[initial_state_key]))
         running_rewards.append(total_reward)
+        episode_rewards.append(total_reward)
+        
+        # Decay epsilon after each episode
+        agent.decay_epsilon()
         
         if episode % 1000 == 0:
             avg_reward = np.mean(running_rewards[-1000:]) if running_rewards else 0
+            avg_steps = np.mean(episode_steps[-1000:]) if episode_steps else 0
             print(
                 f"Episode {episode}/{n_episodes},",
                 f"Initial State Value: {initial_values[-1]:.3f},",
-                f"Avg Reward: {avg_reward:.3f}",
+                f"Avg Reward: {avg_reward:.3f},",
+                f"Avg Steps: {avg_steps:.1f},",
+                f"Epsilon: {agent.epsilon:.3f}",
             )
             
-    return initial_values
+    return initial_values, episode_rewards
 
 def evaluate_policy(agent, n_episodes: int = 1000, max_steps: int = 200) -> float:
     wins = 0
@@ -301,50 +320,117 @@ def visualize_path(maze: np.ndarray, path: List[Tuple], save_path: str = 'path_v
     plt.close()
 
 if __name__ == "__main__":
-    env = ModifiedMaze()
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Train and evaluate RL agents on the Modified Maze environment')
     
-    # Train with more conservative parameters
-    print("\nTraining Q-learning agents...")
-    q_agent1 = QLearningAgent(env, epsilon=0.1, alpha_power=2/3)
-    q_agent2 = QLearningAgent(env, epsilon=0.2, alpha_power=2/3)
+    # Training parameters
+    parser.add_argument('--n_episodes', type=int, default=50000, help='Number of training episodes')
+    parser.add_argument('--max_steps', type=int, default=100, help='Maximum steps per episode')
+    parser.add_argument('--gamma', type=float, default=0.98, help='Discount factor')
     
-    q_values1 = train_agent(q_agent1, n_episodes=50000)
-    q_values2 = train_agent(q_agent2, n_episodes=50000)
+    # Agent parameters
+    parser.add_argument('--epsilon', type=float, default=0.1, help='Initial epsilon for epsilon-greedy exploration')
+    parser.add_argument('--epsilon2', type=float, default=0.2, help='Initial epsilon for second agent')
+    parser.add_argument('--epsilon_decay', type=float, default=1.0, help='Epsilon decay rate (1.0 means no decay)')
+    parser.add_argument('--epsilon_min', type=float, default=0.01, help='Minimum epsilon value')
+    parser.add_argument('--alpha_power', type=float, default=2/3, help='Power for learning rate decay')
     
-    # Plot Q-learning results with both raw and moving average
+    # Plotting parameters
+    parser.add_argument('--window', type=int, default=500, help='Window size for moving average in plots')
+    
+    # Environment parameters
+    parser.add_argument('--poison_prob', type=float, default=1/50, help='Probability of poisoning')
+    
+    args = parser.parse_args()
+    
+    # Create environment and agents
+    env = ModifiedMaze(poison_prob=args.poison_prob)
+    
+    # Train Q-learning agents
+    print("Training Q-learning agents...")
+    q_agent1 = QLearningAgent(env, epsilon=args.epsilon, alpha_power=args.alpha_power,
+                             epsilon_decay=args.epsilon_decay, epsilon_min=args.epsilon_min)
+    q_agent2 = QLearningAgent(env, epsilon=args.epsilon2, alpha_power=args.alpha_power,
+                             epsilon_decay=args.epsilon_decay, epsilon_min=args.epsilon_min)
+    
+    q_values1, q_rewards1 = train_agent(q_agent1, n_episodes=args.n_episodes, 
+                                      gamma=args.gamma, max_steps=args.max_steps)
+    q_values2, q_rewards2 = train_agent(q_agent2, n_episodes=args.n_episodes, 
+                                      gamma=args.gamma, max_steps=args.max_steps)
+    
+    # Plot Q-learning results
     plt.figure(figsize=(10, 6))
-    window = 500
     
+    # Plot moving averages for rewards
+    ma1 = np.convolve(q_rewards1, np.ones(args.window)/args.window, mode='valid')
+    ma2 = np.convolve(q_rewards2, np.ones(args.window)/args.window, mode='valid')
+    plt.plot(np.arange(len(ma1)) + args.window//2, ma1, color='blue', 
+            label=f'ε={args.epsilon} (moving avg)')
+    plt.plot(np.arange(len(ma2)) + args.window//2, ma2, color='orange', 
+            label=f'ε={args.epsilon2} (moving avg)')
     
-    # Plot moving averages
-    ma1 = np.convolve(q_values1, np.ones(window)/window, mode='valid')
-    ma2 = np.convolve(q_values2, np.ones(window)/window, mode='valid')
-    plt.plot(np.arange(len(ma1)) + window//2, ma1, color='blue', label='ε=0.1 (moving avg)')
-    plt.plot(np.arange(len(ma2)) + window//2, ma2, color='orange', label='ε=0.2 (moving avg)')
+    plt.xlabel('Episode')
+    plt.ylabel('Total Reward')
+    plt.title('Q-Learning Training Progress: Total Reward per Episode')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.savefig('figs/q_learning_rewards.png')
+    plt.close()
+    
+    # Plot Q-learning convergence
+    plt.figure(figsize=(10, 6))
+    ma1 = np.convolve(q_values1, np.ones(args.window)/args.window, mode='valid')
+    ma2 = np.convolve(q_values2, np.ones(args.window)/args.window, mode='valid')
+    plt.plot(np.arange(len(ma1)) + args.window//2, ma1, color='blue', 
+            label=f'ε={args.epsilon} (moving avg)')
+    plt.plot(np.arange(len(ma2)) + args.window//2, ma2, color='orange', 
+            label=f'ε={args.epsilon2} (moving avg)')
     
     plt.xlabel('Episode')
     plt.ylabel('Initial State Value')
-    plt.title('Q-learning Convergence')
+    plt.title('Q-Learning Convergence')
     plt.legend()
     plt.grid(True)
     plt.savefig('figs/q_learning_convergence.png')
     plt.close()
     
+    # Train SARSA agents
     print("\nTraining SARSA agents...")
-    sarsa_agent1 = SarsaAgent(env, epsilon=0.1, alpha_power=2/3)
-    sarsa_agent2 = SarsaAgent(env, epsilon=0.2, alpha_power=2/3)
+    sarsa_agent1 = SarsaAgent(env, epsilon=args.epsilon, alpha_power=args.alpha_power,
+                             epsilon_decay=args.epsilon_decay, epsilon_min=args.epsilon_min)
+    sarsa_agent2 = SarsaAgent(env, epsilon=args.epsilon2, alpha_power=args.alpha_power,
+                             epsilon_decay=args.epsilon_decay, epsilon_min=args.epsilon_min)
     
-    sarsa_values1 = train_agent(sarsa_agent1, n_episodes=50000)
-    sarsa_values2 = train_agent(sarsa_agent2, n_episodes=50000)
+    sarsa_values1, sarsa_rewards1 = train_agent(sarsa_agent1, n_episodes=args.n_episodes,
+                                               gamma=args.gamma, max_steps=args.max_steps)
+    sarsa_values2, sarsa_rewards2 = train_agent(sarsa_agent2, n_episodes=args.n_episodes,
+                                               gamma=args.gamma, max_steps=args.max_steps)
     
-    # Plot SARSA results with both raw and moving average
+    # Plot SARSA results
     plt.figure(figsize=(10, 6))
+    ma1 = np.convolve(sarsa_rewards1, np.ones(args.window)/args.window, mode='valid')
+    ma2 = np.convolve(sarsa_rewards2, np.ones(args.window)/args.window, mode='valid')
+    plt.plot(np.arange(len(ma1)) + args.window//2, ma1, color='blue', 
+            label=f'ε={args.epsilon} (moving avg)')
+    plt.plot(np.arange(len(ma2)) + args.window//2, ma2, color='orange', 
+            label=f'ε={args.epsilon2} (moving avg)')
     
-    # Plot moving averages
-    ma1 = np.convolve(sarsa_values1, np.ones(window)/window, mode='valid')
-    ma2 = np.convolve(sarsa_values2, np.ones(window)/window, mode='valid')
-    plt.plot(np.arange(len(ma1)) + window//2, ma1, color='blue', label='ε=0.1 (moving avg)')
-    plt.plot(np.arange(len(ma2)) + window//2, ma2, color='orange', label='ε=0.2 (moving avg)')
+    plt.xlabel('Episode')
+    plt.ylabel('Total Reward')
+    plt.title('SARSA Training Progress: Total Reward per Episode')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.savefig('figs/sarsa_rewards.png')
+    plt.close()
+    
+    # Plot SARSA convergence
+    plt.figure(figsize=(10, 6))
+    ma1 = np.convolve(sarsa_values1, np.ones(args.window)/args.window, mode='valid')
+    ma2 = np.convolve(sarsa_values2, np.ones(args.window)/args.window, mode='valid')
+    plt.plot(np.arange(len(ma1)) + args.window//2, ma1, color='blue', 
+            label=f'ε={args.epsilon} (moving avg)')
+    plt.plot(np.arange(len(ma2)) + args.window//2, ma2, color='orange', 
+            label=f'ε={args.epsilon2} (moving avg)')
     
     plt.xlabel('Episode')
     plt.ylabel('Initial State Value')
@@ -355,51 +441,13 @@ if __name__ == "__main__":
     plt.close()
     
     # Evaluate final policies
-    print("\nEvaluating policies...")
-    q_success = evaluate_policy(q_agent1)
-    sarsa_success = evaluate_policy(sarsa_agent1)
+    print("\nEvaluating final policies...")
+    q_success1 = evaluate_policy(q_agent1)
+    q_success2 = evaluate_policy(q_agent2)
+    sarsa_success1 = evaluate_policy(sarsa_agent1)
+    sarsa_success2 = evaluate_policy(sarsa_agent2)
     
-    print(f"\nQ-learning success probability: {q_success:.3f}")
-    print(f"SARSA success probability: {sarsa_success:.3f}")
-    
-    # Visualize Q-learning path
-    print("\nSimulating one episode with trained Q-learning agent...")
-    state = ((0, 0), (6, 5), False)
-    q_path = []
-    total_reward = 0
-    
-    while True:
-        q_path.append(state)
-        action = q_agent1.get_action(state, training=False)
-        next_state, reward, done = env.step(state, action)
-        total_reward += reward
-        
-        if done:
-            q_path.append(next_state if next_state is not None else 'Terminal')
-            break
-            
-        state = next_state
-    
-    print(f"Q-learning episode finished with total reward: {total_reward}")
-    visualize_path(env.maze, q_path, 'q_learning_path.png')
-    
-    # Visualize SARSA path
-    print("\nSimulating one episode with trained SARSA agent...")
-    state = ((0, 0), (6, 5), False)
-    sarsa_path = []
-    total_reward = 0
-    
-    while True:
-        sarsa_path.append(state)
-        action = sarsa_agent1.get_action(state, training=False)
-        next_state, reward, done = env.step(state, action)
-        total_reward += reward
-        
-        if done:
-            sarsa_path.append(next_state if next_state is not None else 'Terminal')
-            break
-            
-        state = next_state
-    
-    print(f"SARSA episode finished with total reward: {total_reward}")
-    visualize_path(env.maze, sarsa_path, 'sarsa_path.png')
+    print(f"\nQ-Learning (ε={args.epsilon}): {q_success1:.1%} success rate")
+    print(f"Q-Learning (ε={args.epsilon2}): {q_success2:.1%} success rate")
+    print(f"SARSA (ε={args.epsilon}): {sarsa_success1:.1%} success rate")
+    print(f"SARSA (ε={args.epsilon2}): {sarsa_success2:.1%} success rate")
