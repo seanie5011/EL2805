@@ -2,14 +2,17 @@
 # Seán O Riordan (seanor@kth.se)
 
 import random
-from enum import IntEnum, auto
-from typing import Tuple, List
 import argparse
+from pathlib import Path
+from enum import IntEnum
+from typing import Tuple, List
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle
+
+Path(__file__).parent.parent.joinpath('figs').mkdir(parents=True, exist_ok=True)
 
 class State(IntEnum):
     EMPTY = 0
@@ -254,8 +257,13 @@ def train_agent(agent, n_episodes: int, gamma: float = 0.98, max_steps: int = 10
             
     return initial_values, episode_rewards
 
-def evaluate_policy(agent, n_episodes: int = 1000, max_steps: int = 200) -> float:
-    wins = 0
+def evaluate_policy(agent, n_episodes: int = 1000, max_steps: int = 200) -> dict:
+    outcomes = {
+        'Win': 0,
+        'Eaten': 0,
+        'Poisoned': 0,
+        'Timeout': 0
+    }
     
     for episode in range(n_episodes):
         state = ((0, 0), (6, 5), False)
@@ -266,14 +274,22 @@ def evaluate_policy(agent, n_episodes: int = 1000, max_steps: int = 200) -> floa
             next_state, reward, done = agent.env.step(state, action)
             
             if done:
+                # hacky
                 if reward == Reward.WIN:
-                    wins += 1
+                    outcomes['Win'] += 1
+                elif reward == Reward.EATEN:
+                    outcomes['Eaten'] += 1
+                elif reward == Reward.POISONED:
+                    outcomes['Poisoned'] += 1
                 break
                 
             state = next_state
             steps += 1
-                
-    return wins / n_episodes
+            
+        if steps >= max_steps:
+            outcomes['Timeout'] += 1
+    
+    return outcomes
 
 def visualize_path(maze: np.ndarray, path: List[Tuple], save_path: str = 'path_visualization.png'):
     plt.figure(figsize=(10, 10))
@@ -365,13 +381,16 @@ if __name__ == "__main__":
     ma1 = np.convolve(q_rewards1, np.ones(args.window)/args.window, mode='valid')
     ma2 = np.convolve(q_rewards2, np.ones(args.window)/args.window, mode='valid')
     plt.plot(np.arange(len(ma1)) + args.window//2, ma1, color='blue', 
-            label=f'ε={args.epsilon} (moving avg)')
+            label=f'ε={args.epsilon} (moving avg {args.window} over episodes)')
     plt.plot(np.arange(len(ma2)) + args.window//2, ma2, color='orange', 
-            label=f'ε={args.epsilon2} (moving avg)')
+            label=f'ε={args.epsilon2} (moving avg {args.window} over episodes)')
     
     plt.xlabel('Episode')
     plt.ylabel('Total Reward')
-    plt.title('Q-Learning Training Progress: Total Reward per Episode')
+    plt.title(
+        'Q-Learning Training Progress: Total Reward per Episode' + \
+        f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else ''
+    )
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.savefig('figs/q_learning_rewards.png')
@@ -379,16 +398,13 @@ if __name__ == "__main__":
     
     # Plot Q-learning convergence
     plt.figure(figsize=(10, 6))
-    ma1 = np.convolve(q_values1, np.ones(args.window)/args.window, mode='valid')
-    ma2 = np.convolve(q_values2, np.ones(args.window)/args.window, mode='valid')
-    plt.plot(np.arange(len(ma1)) + args.window//2, ma1, color='blue', 
-            label=f'ε={args.epsilon} (moving avg)')
-    plt.plot(np.arange(len(ma2)) + args.window//2, ma2, color='orange', 
-            label=f'ε={args.epsilon2} (moving avg)')
+    plt.plot(q_values1, color='blue', label=f'ε={args.epsilon}')
+    plt.plot(q_values2, color='orange', label=f'ε={args.epsilon2}')
     
     plt.xlabel('Episode')
     plt.ylabel('Initial State Value')
-    plt.title('Q-Learning Convergence')
+    plt.title('Q-Learning Convergence' + \
+              f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
     plt.legend()
     plt.grid(True)
     plt.savefig('figs/q_learning_convergence.png')
@@ -417,7 +433,9 @@ if __name__ == "__main__":
     
     plt.xlabel('Episode')
     plt.ylabel('Total Reward')
-    plt.title('SARSA Training Progress: Total Reward per Episode')
+    plt.title('SARSA Training Progress: Total Reward per Episode' + \
+              f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
+    
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.savefig('figs/sarsa_rewards.png')
@@ -425,16 +443,13 @@ if __name__ == "__main__":
     
     # Plot SARSA convergence
     plt.figure(figsize=(10, 6))
-    ma1 = np.convolve(sarsa_values1, np.ones(args.window)/args.window, mode='valid')
-    ma2 = np.convolve(sarsa_values2, np.ones(args.window)/args.window, mode='valid')
-    plt.plot(np.arange(len(ma1)) + args.window//2, ma1, color='blue', 
-            label=f'ε={args.epsilon} (moving avg)')
-    plt.plot(np.arange(len(ma2)) + args.window//2, ma2, color='orange', 
-            label=f'ε={args.epsilon2} (moving avg)')
+    plt.plot(sarsa_values1, color='blue', label=f'ε={args.epsilon}')
+    plt.plot(sarsa_values2, color='orange', label=f'ε={args.epsilon2}')
     
     plt.xlabel('Episode')
     plt.ylabel('Initial State Value')
-    plt.title('SARSA Convergence')
+    plt.title('SARSA Convergence' + \
+              f' (epsilon_decay={args.epsilon_decay}, min_epsilon={args.epsilon_min})' if args.epsilon_decay != 1.0 else '')
     plt.legend()
     plt.grid(True)
     plt.savefig('figs/sarsa_convergence.png')
@@ -442,12 +457,45 @@ if __name__ == "__main__":
     
     # Evaluate final policies
     print("\nEvaluating final policies...")
-    q_success1 = evaluate_policy(q_agent1)
-    q_success2 = evaluate_policy(q_agent2)
-    sarsa_success1 = evaluate_policy(sarsa_agent1)
-    sarsa_success2 = evaluate_policy(sarsa_agent2)
+    q_outcomes1 = evaluate_policy(q_agent1)
+    q_outcomes2 = evaluate_policy(q_agent2)
+    sarsa_outcomes1 = evaluate_policy(sarsa_agent1)
+    sarsa_outcomes2 = evaluate_policy(sarsa_agent2)
     
-    print(f"\nQ-Learning (ε={args.epsilon}): {q_success1:.1%} success rate")
-    print(f"Q-Learning (ε={args.epsilon2}): {q_success2:.1%} success rate")
-    print(f"SARSA (ε={args.epsilon}): {sarsa_success1:.1%} success rate")
-    print(f"SARSA (ε={args.epsilon2}): {sarsa_success2:.1%} success rate")
+    # Plot outcomes for Q-learning agents
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    total_outcomes = sum(q_outcomes1.values())
+    outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in q_outcomes1.items()}
+    plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
+    plt.title(f'Q-Learning Outcomes (ε={args.epsilon})')
+    plt.ylabel('Percentage of Episodes (%)')
+    
+    plt.subplot(1, 2, 2)
+    total_outcomes = sum(q_outcomes2.values())
+    outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in q_outcomes2.items()}
+    plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
+    plt.title(f'Q-Learning Outcomes (ε={args.epsilon2})')
+    plt.ylabel('Percentage of Episodes (%)')
+    plt.tight_layout()
+    plt.savefig('figs/q_learning_outcomes.png')
+    plt.close()
+    
+    # Plot outcomes for SARSA agents
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    total_outcomes = sum(sarsa_outcomes1.values())
+    outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in sarsa_outcomes1.items()}
+    plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
+    plt.title(f'SARSA Outcomes (ε={args.epsilon})')
+    plt.ylabel('Percentage of Episodes (%)')
+    
+    plt.subplot(1, 2, 2)
+    total_outcomes = sum(sarsa_outcomes2.values())
+    outcomes_percentages = {k: (v/total_outcomes)*100 for k, v in sarsa_outcomes2.items()}
+    plt.bar(outcomes_percentages.keys(), outcomes_percentages.values())
+    plt.title(f'SARSA Outcomes (ε={args.epsilon2})')
+    plt.ylabel('Percentage of Episodes (%)')
+    plt.tight_layout()
+    plt.savefig('figs/sarsa_outcomes.png')
+    plt.close()
