@@ -20,6 +20,7 @@ class Reward(IntEnum):
     WIN = 1000
     KEY = 100
     EATEN = -100
+    POISONED = -10  # New negative reward for being poisoned
     STEP = -1
 
 class ModifiedMaze:
@@ -89,7 +90,7 @@ class ModifiedMaze:
         # Random movement among valid moves
         return random.choice([pos for _, pos in valid_moves])
     
-    def step(self, state, action):
+    def step(self, state, action, poison_prob=1/30):
         """Take a step in the environment."""
         player_pos, minotaur_pos, has_key = state
         
@@ -123,6 +124,10 @@ class ModifiedMaze:
                 
         if self.maze[new_player_pos] == State.KEY and not has_key:
             return (new_player_pos, new_minotaur_pos, new_has_key), Reward.KEY, False
+            
+        # Check for poison
+        if random.random() < poison_prob:
+            return None, Reward.POISONED, True
             
         step_penalty = Reward.STEP
         
