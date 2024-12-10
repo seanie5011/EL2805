@@ -464,6 +464,18 @@ if __name__ == "__main__":
     sarsa_outcomes1 = evaluate_policy(sarsa_agent1)
     sarsa_outcomes2 = evaluate_policy(sarsa_agent2)
     
+    # Calculate win rates
+    q_win_rate1 = (q_outcomes1['Win'] / sum(q_outcomes1.values())) * 100
+    q_win_rate2 = (q_outcomes2['Win'] / sum(q_outcomes2.values())) * 100
+    sarsa_win_rate1 = (sarsa_outcomes1['Win'] / sum(sarsa_outcomes1.values())) * 100
+    sarsa_win_rate2 = (sarsa_outcomes2['Win'] / sum(sarsa_outcomes2.values())) * 100
+
+    print("\nWin Rates:")
+    print(f"Q-Learning (ε={args.epsilon}): {q_win_rate1:.2f}%")
+    print(f"Q-Learning (ε={args.epsilon2}): {q_win_rate2:.2f}%")
+    print(f"SARSA (ε={args.epsilon}): {sarsa_win_rate1:.2f}%")
+    print(f"SARSA (ε={args.epsilon2}): {sarsa_win_rate2:.2f}%")
+    
     # Plot outcomes for Q-learning agents
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
